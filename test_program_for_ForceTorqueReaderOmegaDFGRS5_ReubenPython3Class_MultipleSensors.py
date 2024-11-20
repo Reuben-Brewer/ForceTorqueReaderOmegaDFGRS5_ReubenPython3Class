@@ -6,18 +6,18 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision A, 12/27/2023
+Software Revision B, 11/20/2024
 
-Verified working on: Python 3.8 for Windows 10/11 64-bit and Raspberry Pi Buster (may work on Mac in non-GUI mode, but haven't tested yet).
+Verified working on: Python 3.11 for Windows 10/11 64-bit.
 '''
 
 __author__ = 'reuben.brewer'
 
 ##########################################
-from MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3Class import *
 from CSVdataLogger_ReubenPython3Class import *
-from MyPrint_ReubenPython2and3Class import *
 from ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class import *
+from MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3Class import *
+from MyPrint_ReubenPython2and3Class import *
 ##########################################
 
 ##########################################
@@ -28,6 +28,7 @@ import time
 import datetime
 import threading
 import collections
+import keyboard
 ##########################################
 
 ##########################################
@@ -103,12 +104,24 @@ def GUI_update_clock():
 
 ##########################################################################################################
 ##########################################################################################################
-def ExitProgram_Callback():
+def ExitProgram_Callback(OptionalArugment = 0):
     global EXIT_PROGRAM_FLAG
+    global CSVdataLogger_ReubenPython3ClassObject
+    global CSVdataLogger_OPEN_FLAG
 
-    print("ExitProgram_Callback event fired!")
+    if CSVdataLogger_OPEN_FLAG == 1:
 
-    EXIT_PROGRAM_FLAG = 1
+        if CSVdataLogger_ReubenPython3ClassObject.IsSaving() == 0:
+            print("ExitProgram_Callback event fired!")
+            EXIT_PROGRAM_FLAG = 1
+        else:
+            print("CSV is saving, cannot exit!")
+            EXIT_PROGRAM_FLAG = 0
+
+    else:
+        print("ExitProgram_Callback event fired!")
+        EXIT_PROGRAM_FLAG = 1
+
 ##########################################################################################################
 ##########################################################################################################
 
@@ -150,8 +163,8 @@ def GUI_Thread():
         Tab_MyPrint = ttk.Frame(TabControlObject)
         TabControlObject.add(Tab_MyPrint, text='   MyPrint Terminal   ')
 
-        Tab_CSVdataLogger = ttk.Frame(TabControlObject)
-        TabControlObject.add(Tab_CSVdataLogger, text='   CSVdataLogger   ')
+        #Tab_CSVdataLogger = ttk.Frame(TabControlObject)
+        #TabControlObject.add(Tab_CSVdataLogger, text='   CSVdataLogger   ')
 
         TabControlObject.pack(expand=1, fill="both")  # CANNOT MIX PACK AND GRID IN THE SAME FRAME/TAB, SO ALL .GRID'S MUST BE CONTAINED WITHIN THEIR OWN FRAME/TAB.
 
@@ -191,15 +204,6 @@ def GUI_Thread():
     #################################################
     #################################################
 
-    '''
-    #################################################
-    #################################################
-    ResetLatchedAlarms_Button = Button(ButtonsFrame, text="Reset Alarms", state="normal", width=20, command=lambda: ResetLatchedAlarms_Button_Response())
-    ResetLatchedAlarms_Button.grid(row=0, column=2, padx=10, pady=10, columnspan=1, rowspan=1)
-    #################################################
-    #################################################
-    '''
-
     ##########################################################################################################
 
     ################################################# THIS BLOCK MUST COME 2ND-TO-LAST IN def GUI_Thread() IF USING TABS.
@@ -237,18 +241,6 @@ def ResetTare_Button_Response():
 
 ##########################################################################################################
 ##########################################################################################################
-
-'''
-##########################################################################################################
-##########################################################################################################
-def ResetLatchedAlarms_Button_Response():
-    global ResetLatchedAlarms_EventNeedsToBeFiredFlag
-
-    ResetLatchedAlarms_EventNeedsToBeFiredFlag = 1
-
-##########################################################################################################
-##########################################################################################################
-'''
 
 ##########################################################################################################
 ##########################################################################################################
@@ -297,6 +289,12 @@ if __name__ == '__main__':
 
     global USE_CSVdataLogger_FLAG
     USE_CSVdataLogger_FLAG = 1
+
+    global USE_KEYBOARD_FLAG
+    USE_KEYBOARD_FLAG = 1
+
+    global TorqueInsteadOfForceFlag
+    TorqueInsteadOfForceFlag = -1
     #################################################
     #################################################
 
@@ -398,14 +396,17 @@ if __name__ == '__main__':
     global ResetTare_EventNeedsToBeFiredFlag
     ResetTare_EventNeedsToBeFiredFlag = 0
 
-    #global ResetLatchedAlarms_EventNeedsToBeFiredFlag
-    #ResetLatchedAlarms_EventNeedsToBeFiredFlag = 0
+    global SumOfForcesFromAllSensors_N
+    SumOfForcesFromAllSensors_N = 0
 
-    global SumOfForcesFromAllSensors_lb
-    SumOfForcesFromAllSensors_lb = 0
+    global SumOfForceDerivativesFromAllSensors_N
+    SumOfForceDerivativesFromAllSensors_N = 0
+    
+    global SumOfTorquesFromAllSensors_Nm
+    SumOfTorquesFromAllSensors_Nm = 0
 
-    global SumOfForceDerivativesFromAllSensors_lb
-    SumOfForceDerivativesFromAllSensors_lb = 0
+    global SumOfTorqueDerivativesFromAllSensors_Nm
+    SumOfTorqueDerivativesFromAllSensors_Nm = 0
     #################################################
     #################################################
 
@@ -530,7 +531,7 @@ if __name__ == '__main__':
                                                                                     ("DedicatedRxThread_TimeToSleepEachLoop", 0.001),
                                                                                     ("DedicatedTxThread_TimeToSleepEachLoop", 0.010),
                                                                                     ("DedicatedTxThread_TxMessageToSend_Queue_MaxSize", 1),
-                                                                                    ("ForceDerivative_ExponentialSmoothingFilterLambda", 0.95)])
+                                                                                    ("MeasurementDerivative_ExponentialSmoothingFilterLambda", 0.95)])
         #################################################
 
         #################################################
@@ -568,9 +569,24 @@ if __name__ == '__main__':
     #################################################
     #################################################
     #################################################
+    if USE_ForceTorqueReaderOmegaDFGRS5_FLAG == 1:
+        if EXIT_PROGRAM_FLAG == 0:
+            if ForceTorqueReaderOmegaDFGRS5_OPEN_FLAG != 1:
+                print("Failed to open ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class.")
+                ExitProgram_Callback()
+    #################################################
+    #################################################
+    #################################################
+
+    #################################################
+    #################################################
+    #################################################
+
+    #################################################
+    #################################################
     global CSVdataLogger_ReubenPython3ClassObject_GUIparametersDict
     CSVdataLogger_ReubenPython3ClassObject_GUIparametersDict = dict([("USE_GUI_FLAG", USE_GUI_FLAG and SHOW_IN_GUI_CSVdataLogger_FLAG),
-                                    ("root", Tab_CSVdataLogger),
+                                    ("root", Tab_MainControls), #Tab_CSVdataLogger
                                     ("EnableInternal_MyPrint_Flag", 1),
                                     ("NumberOfPrintLines", 10),
                                     ("UseBorderAroundThisGuiObjectFlag", 0),
@@ -584,22 +600,47 @@ if __name__ == '__main__':
     #################################################
 
     #################################################
+    #################################################
+
+
+    #################################################
     CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList = ["Time (S)",
-                                                                                    "SumOfForcesFromAllSensors (lb)"]
+                                                                                    "SumOfForcesFromAllSensors (N)"]
     #################################################
 
     #################################################
     for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
-        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("Force " + str(Index) + " (lb)")
+        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("Force " + str(Index) + " (N)")
     #################################################
 
     #################################################
-    CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("SumOfForceDerivativesFromAllSensors (lb/s)")
+    CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("SumOfForceDerivativesFromAllSensors (N/s)")
     #################################################
 
     #################################################
     for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
-        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("ForceDerivative " + str(Index) + " (lb/s)")
+        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("ForceDerivative " + str(Index) + " (N/s)")
+    #################################################
+
+    #################################################
+    CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("SumOfTorquesFromAllSensors (Nm)")
+    #################################################
+
+    #################################################
+    for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
+        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("Torque " + str(Index) + " (Nm)")
+    #################################################
+
+    #################################################
+    CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("SumOfTorqueDerivativesFromAllSensors (Nm/s)")
+    #################################################
+
+    #################################################
+    for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
+        CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList.append("TorqueDerivative " + str(Index) + " (Nm/s)")
+    #################################################
+
+    #################################################
     #################################################
 
     #################################################
@@ -611,7 +652,7 @@ if __name__ == '__main__':
     global CSVdataLogger_ReubenPython3ClassObject_setup_dict
     CSVdataLogger_ReubenPython3ClassObject_setup_dict = dict([("GUIparametersDict", CSVdataLogger_ReubenPython3ClassObject_GUIparametersDict),
                                                                                 ("NameToDisplay_UserSet", "CSVdataLogger"),
-                                                                                ("CSVfile_DirectoryPath", os.getcwd() + "\\CSVfiles"),
+                                                                                ("CSVfile_DirectoryPath", "C:\\CSVfiles"), #os.getcwd() + "\\CSVfiles"
                                                                                 ("FileNamePrefix", "CSV_file_"),
                                                                                 ("VariableNamesForHeaderList", CSVdataLogger_ReubenPython3ClassObject_setup_dict_VariableNamesForHeaderList),
                                                                                 ("MainThread_TimeToSleepEachLoop", 0.002),
@@ -626,7 +667,18 @@ if __name__ == '__main__':
             exceptions = sys.exc_info()[0]
             print("CSVdataLogger_ReubenPython3ClassObject __init__: Exceptions: %s" % exceptions)
             traceback.print_exc()
+
     #################################################
+    #################################################
+    #################################################
+
+    #################################################
+    #################################################
+    if USE_CSVdataLogger_FLAG == 1:
+        if EXIT_PROGRAM_FLAG == 0:
+            if CSVdataLogger_OPEN_FLAG != 1:
+                print("Failed to open CSVdataLogger_ReubenPython3Class.")
+                ExitProgram_Callback()
     #################################################
     #################################################
 
@@ -663,11 +715,21 @@ if __name__ == '__main__':
 
     #################################################
     #################################################
+    if USE_MyPrint_FLAG == 1:
+        if EXIT_PROGRAM_FLAG == 0:
+            if MyPrint_OPEN_FLAG != 1:
+                print("Failed to open MyPrint_ReubenPython2and3ClassObject.")
+                ExitProgram_Callback()
+    #################################################
+    #################################################
+
+    #################################################
+    #################################################
     global MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList
-    MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList = ["SumOfForcesFromAllSensors_lb", "SumOfForceDerivativesFromAllSensors_lb", "Channel2", "Channel3", "Channel4", "Channel5"]
+    MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList = ["SumOfForcesFromAllSensors_N", "SumOfTorquesFromAllSensors_Nm", "Channel2", "Channel3", "Channel4", "Channel5"]
 
     global MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_ColorList
-    MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_ColorList = ["Red", "Green", "Blue", "Black", "Purple", "Orange"]
+    MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_ColorList = ["Green", "Red", "Blue", "Black", "Purple", "Orange"]
 
     global MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_GUIparametersDict
     MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_GUIparametersDict = dict([("EnableInternal_MyPrint_Flag", 1),
@@ -682,7 +744,7 @@ if __name__ == '__main__':
     global MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_setup_dict
     MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_setup_dict = dict([("GUIparametersDict", MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_GUIparametersDict),
                                                                                         ("ParentPID", os.getpid()),
-                                                                                        ("WatchdogTimerExpirationDurationSeconds_StandAlonePlottingProcess", 0.0),
+                                                                                        ("WatchdogTimerExpirationDurationSeconds_StandAlonePlottingProcess", 5.0),
                                                                                         ("MarkerSize", 3),
                                                                                         ("CurvesToPlotNamesAndColorsDictOfLists",
                                                                                             dict([("NameList", MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList),
@@ -717,36 +779,18 @@ if __name__ == '__main__':
 
     #################################################
     #################################################
-
-    #################################################
-    #################################################
-    if USE_ForceTorqueReaderOmegaDFGRS5_FLAG == 1 and ForceTorqueReaderOmegaDFGRS5_OPEN_FLAG != 1:
-        print("Failed to open ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class.")
-        ExitProgram_Callback()
-    #################################################
-    #################################################
-
-    #################################################
-    #################################################
-    if USE_MyPrint_FLAG == 1 and MyPrint_OPEN_FLAG != 1:
-        print("Failed to open MyPrint_ReubenPython2and3ClassObject.")
-        ExitProgram_Callback()
+    if USE_MyPlotterPureTkinterStandAloneProcess_FLAG == 1:
+        if EXIT_PROGRAM_FLAG == 0:
+            if MyPlotterPureTkinterStandAloneProcess_OPEN_FLAG != 1:
+                print("Failed to open MyPlotterPureTkinterClass_Object.")
+                ExitProgram_Callback()
     #################################################
     #################################################
 
     #################################################
     #################################################
-    if USE_CSVdataLogger_FLAG == 1 and CSVdataLogger_OPEN_FLAG != 1:
-        print("Failed to open CSVdataLogger_ReubenPython3Class.")
-        ExitProgram_Callback()
-    #################################################
-    #################################################
-
-    #################################################
-    #################################################
-    if USE_MyPlotterPureTkinterStandAloneProcess_FLAG == 1 and MyPlotterPureTkinterStandAloneProcess_OPEN_FLAG != 1:
-        print("Failed to open MyPlotterPureTkinterClass_Object.")
-        ExitProgram_Callback()
+    if USE_KEYBOARD_FLAG == 1 and EXIT_PROGRAM_FLAG == 0:
+        keyboard.on_press_key("esc", ExitProgram_Callback)
     #################################################
     #################################################
 
@@ -767,16 +811,30 @@ if __name__ == '__main__':
         ###################################################
         if ForceTorqueReaderOmegaDFGRS5_OPEN_FLAG == 1:
 
-            SumOfForcesFromAllSensors_lb = 0
-            SumOfForceDerivativesFromAllSensors_lbPerSec = 0
+            SumOfForcesFromAllSensors_N = 0
+            SumOfForceDerivativesFromAllSensors_NPerSec = 0
+            SumOfTorquesFromAllSensors_Nm = 0
+            SumOfTorqueDerivativesFromAllSensors_NmPerSec = 0
+            
             for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
                 ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] = ForceTorqueReaderOmegaDFGRS5_ListOfObjects[Index].GetMostRecentDataDict()
 
-                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "MeasurementForce_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
-                    SumOfForcesFromAllSensors_lb = SumOfForcesFromAllSensors_lb + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementForce_DictOfConvertedValues"]["lbF"]
-                    SumOfForceDerivativesFromAllSensors_lbPerSec = SumOfForceDerivativesFromAllSensors_lbPerSec + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementForceDerivative_DictOfConvertedValues"]["lbF"]
+                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "Measurement_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
+                    SumOfForcesFromAllSensors_N = SumOfForcesFromAllSensors_N + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["Measurement_DictOfConvertedValues"]["N"]
+                    SumOfForceDerivativesFromAllSensors_NPerSec = SumOfForceDerivativesFromAllSensors_NPerSec + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementDerivative_DictOfConvertedValues"]["N"]
+                    
+                    SumOfTorquesFromAllSensors_Nm = SumOfTorquesFromAllSensors_Nm + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["Measurement_DictOfConvertedValues"]["Nm"]
+                    SumOfTorqueDerivativesFromAllSensors_NmPerSec = SumOfTorqueDerivativesFromAllSensors_NmPerSec + ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementDerivative_DictOfConvertedValues"]["Nm"]
 
-            #print("SumOfForcesFromAllSensors_lb: " + str(SumOfForcesFromAllSensors_lb) + ", SumOfForceDerivativesFromAllSensors_lbPerSec: " + str(SumOfForceDerivativesFromAllSensors_lbPerSec))
+                    ###################################################
+                    if ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[0]["Measurement_DictOfConvertedValues"]["N"] == -11111.0:
+                        TorqueInsteadOfForceFlag = 1
+                    elif ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[0]["Measurement_DictOfConvertedValues"]["Nm"] == -11111.0:
+                        TorqueInsteadOfForceFlag = 0
+                    else:
+                        TorqueInsteadOfForceFlag = -1
+                    ###################################################
+
         ###################################################
         ###################################################
 
@@ -802,17 +860,6 @@ if __name__ == '__main__':
                 ResetTare_EventNeedsToBeFiredFlag = 0
             ##########################################################################################################
 
-            '''
-            ##########################################################################################################
-            if ResetLatchedAlarms_EventNeedsToBeFiredFlag == 1:
-
-                for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
-                    ForceTorqueReaderOmegaDFGRS5_ListOfObjects[Index].ResetLatchedAlarms()
-
-                ResetLatchedAlarms_EventNeedsToBeFiredFlag = 0
-            ##########################################################################################################
-            '''
-
         ###################################################
         ###################################################
 
@@ -825,20 +872,37 @@ if __name__ == '__main__':
             ####################################################
             ListToWrite = []
             ListToWrite.append(CurrentTime_MainLoopThread)
-            ListToWrite.append(SumOfForcesFromAllSensors_lb)
+
+            ListToWrite.append(SumOfForcesFromAllSensors_N)
 
             ####################################################
             for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
-                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "MeasurementForce_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
-                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementForce_DictOfConvertedValues"]["lbF"])
+                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "Measurement_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
+                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["Measurement_DictOfConvertedValues"]["N"])
             ####################################################
 
-            ListToWrite.append(SumOfForceDerivativesFromAllSensors_lbPerSec)
+            ListToWrite.append(SumOfForceDerivativesFromAllSensors_NPerSec)
 
             ####################################################
             for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
-                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "MeasurementForce_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
-                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementForceDerivative_DictOfConvertedValues"]["lbF"])
+                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "Measurement_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
+                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementDerivative_DictOfConvertedValues"]["N"])
+            ####################################################
+
+            ListToWrite.append(SumOfTorquesFromAllSensors_Nm)
+
+            ####################################################
+            for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
+                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "Measurement_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
+                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["Measurement_DictOfConvertedValues"]["Nm"])
+            ####################################################
+
+            ListToWrite.append(SumOfTorqueDerivativesFromAllSensors_NmPerSec)
+
+            ####################################################
+            for Index in range(0, ForceTorqueReaderOmegaDFGRS5_NumberOfSensors):
+                if "Time" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index] and "Measurement_DictOfConvertedValues" in ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]:
+                    ListToWrite.append(ForceTorqueReaderOmegaDFGRS5_MostRecentDict_ListOfDicts[Index]["MeasurementDerivative_DictOfConvertedValues"]["Nm"])
             ####################################################
 
             ####################################################
@@ -861,14 +925,17 @@ if __name__ == '__main__':
 
                 if MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_MostRecentDict_StandAlonePlottingProcess_ReadyForWritingFlag == 1:
                     if CurrentTime_MainLoopThread - LastTime_MainLoopThread_MyPlotterPureTkinterStandAloneProcess >= 0.030:
-                        #MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject.ExternalAddPointOrListOfPointsToPlot(MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList[0:ForceTorqueReaderOmegaDFGRS5_NumberOfSensors],
-                        #                                                                                                        [CurrentTime_MainLoopThread]*ForceTorqueReaderOmegaDFGRS5_NumberOfSensors,
-                        #                                                                                                        [CurrentTime_MainLoopThread]*ForceTorqueReaderOmegaDFGRS5_NumberOfSensors)
 
-                        MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject.ExternalAddPointOrListOfPointsToPlot(MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject_NameList[0:2],
-                                                                                                        [CurrentTime_MainLoopThread]*2,
-                                                                                                        [SumOfForcesFromAllSensors_lb, SumOfForceDerivativesFromAllSensors_lbPerSec])
+                        if TorqueInsteadOfForceFlag == 0:
 
+                            MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject.ExternalAddPointOrListOfPointsToPlot(["SumOfForcesFromAllSensors_N"],
+                                                                                                            [CurrentTime_MainLoopThread]*1,
+                                                                                                            [SumOfForcesFromAllSensors_N])
+
+                        else:
+                            MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3ClassObject.ExternalAddPointOrListOfPointsToPlot(["SumOfTorquesFromAllSensors_Nm"],
+                                                                                                            [CurrentTime_MainLoopThread]*1,
+                                                                                                            [SumOfTorquesFromAllSensors_Nm])
 
                         LastTime_MainLoopThread_MyPlotterPureTkinterStandAloneProcess = CurrentTime_MainLoopThread
             ####################################################
@@ -876,7 +943,7 @@ if __name__ == '__main__':
         ####################################################
         ####################################################
 
-        time.sleep(0.010)
+        time.sleep(0.005)
     #################################################
     #################################################
 

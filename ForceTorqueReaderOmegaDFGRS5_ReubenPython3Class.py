@@ -6,9 +6,9 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision A, 12/27/2023
+Software Revision B, 11/20/2024
 
-Verified working on: Python 3.8 for Windows 10/11 64-bit and Raspberry Pi Buster (may work on Mac in non-GUI mode, but haven't tested yet).
+Verified working on: Python 3.11 for Windows 10/11 64-bit.
 '''
 
 __author__ = 'reuben.brewer'
@@ -104,8 +104,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
         self.SerialParity = serial.PARITY_NONE
         self.SerialStopBits = serial.STOPBITS_ONE
         self.SerialByteSize = serial.EIGHTBITS
-        self.SerialRxBufferSize = 100
-        self.SerialTxBufferSize = 100
+        self.SerialRxBufferSize = 10
+        self.SerialTxBufferSize = 20
         self.SerialPortNameCorrespondingToCorrectSerialNumber = "default"
         self.SerialRxThread_still_running_flag = 0
         self.SerialTxThread_still_running_flag = 0
@@ -116,6 +116,12 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
         
         #########################################################
         #########################################################
+
+        self.TorqueInsteadOfForceFlag = 0
+
+        self.ForceUnits_ListOfAcceptableValueStrings = ["ozF", "lbF", "gF", "N", "kgF"]
+        self.TorqueUnits_ListOfAcceptableValueStrings = ["ozFin", "lbFin", "lbFft", "Nm", "Ncm"]
+
         self.ReadingModeString_AcceptableValuesList = ["RealTime_CUR",                  #CUR Current mode (real time mode) for primary reading
                                                        "PeakTension_PT",                #PT Peak Tension mode for primary reading
                                                        "PeakCompression_PC",            #PC Peak Compression mode for primary reading
@@ -152,27 +158,22 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
         self.DataStreamingFrequency_CalculatedFromDedicatedRxThread = -11111.0
         self.DataStreamingDeltaT_CalculatedFromDedicatedRxThread = -11111.0
         
-        self.CurrentTime_CalculateMeasurementForceDerivative = -11111.0
-        self.LastTime_CalculateMeasurementForceDerivative = -11111.0
-        self.DataStreamingDeltaT_CalculateMeasurementForceDerivative = -11111.0
+        self.CurrentTime_CalculateMeasurementDerivative = -11111.0
+        self.LastTime_CalculateMeasurementDerivative = -11111.0
+        self.DataStreamingDeltaT_CalculateMeasurementDerivative = -11111.0
         #########################################################
         #########################################################
 
         #########################################################
         #########################################################
-        self.CurrentMeasurementForce_lb = -11111.0
-        self.LastMeasurementForce_lb = -11111.0
+        self.CurrentMeasurement = -11111.0
+        self.LastMeasurement = -11111.0
         
         self.ResetPeak_EventNeedsToBeFiredFlag = 0
         self.ResetPeak_EventHasHappenedFlag = 0
 
         self.ResetTare_EventNeedsToBeFiredFlag = 0
         self.ResetTare_EventHasHappenedFlag = 0
-
-        '''
-        self.ResetLatchedAlarms_EventNeedsToBeFiredFlag = 0
-        self.ResetLatchedAlarms_EventHasHappenedFlag = 0
-        '''
 
         self.ListCurrentSettingsAndStatus_EventNeedsToBeFiredFlag = 0
 
@@ -397,7 +398,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
         #new_filtered_value = k * raw_sensor_value + (1 - k) * old_filtered_value
         self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_DictOfVariableFilterSettings = dict([("DataStreamingFrequency_CalculatedFromDedicatedTxThread", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
                                                                                                              ("DataStreamingFrequency_CalculatedFromDedicatedRxThread", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
-                                                                                                             ("ForceDerivative", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", self.ForceDerivative_ExponentialSmoothingFilterLambda)]))])
+                                                                                                             ("MeasurementDerivative", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", self.MeasurementDerivative_ExponentialSmoothingFilterLambda)]))])
 
         self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_setup_dict = dict([("DictOfVariableFilterSettings", self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_DictOfVariableFilterSettings)])
 
@@ -621,13 +622,13 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "ForceDerivative_ExponentialSmoothingFilterLambda" in setup_dict:
-            self.ForceDerivative_ExponentialSmoothingFilterLambda = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("ForceDerivative_ExponentialSmoothingFilterLambda", setup_dict["ForceDerivative_ExponentialSmoothingFilterLambda"], 0.0, 1.0)
+        if "MeasurementDerivative_ExponentialSmoothingFilterLambda" in setup_dict:
+            self.MeasurementDerivative_ExponentialSmoothingFilterLambda = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("MeasurementDerivative_ExponentialSmoothingFilterLambda", setup_dict["MeasurementDerivative_ExponentialSmoothingFilterLambda"], 0.0, 1.0)
 
         else:
-            self.ForceDerivative_ExponentialSmoothingFilterLambda = 0.95 #new_filtered_value = k * raw_sensor_value + (1 - k) * old_filtered_value
+            self.MeasurementDerivative_ExponentialSmoothingFilterLambda = 0.95 #new_filtered_value = k * raw_sensor_value + (1 - k) * old_filtered_value
 
-        print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: ForceDerivative_ExponentialSmoothingFilterLambda: " + str(self.ForceDerivative_ExponentialSmoothingFilterLambda))
+        print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: MeasurementDerivative_ExponentialSmoothingFilterLambda: " + str(self.MeasurementDerivative_ExponentialSmoothingFilterLambda))
         #########################################################
         #########################################################
 
@@ -794,65 +795,160 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
     ##########################################################################################################
     ##########################################################################################################
-    def PassThrough0and1values_ExitProgramOtherwise(self, InputNameString, InputNumber):
+    ##########################################################################################################
+    def PassThrough0and1values_ExitProgramOtherwise(self, InputNameString, InputNumber, ExitProgramIfFailureFlag = 0):
 
+        ##########################################################################################################
+        ##########################################################################################################
         try:
+
+            ##########################################################################################################
             InputNumber_ConvertedToFloat = float(InputNumber)
+            ##########################################################################################################
+
         except:
+
+            ##########################################################################################################
             exceptions = sys.exc_info()[0]
-            print("PassThrough0and1values_ExitProgramOtherwise Error. InputNumber must be a float value, Exceptions: %s" % exceptions)
-            input("Press any key to continue")
-            sys.exit()
+            print(self.TellWhichFileWereIn() + ", PassThrough0and1values_ExitProgramOtherwise Error. InputNumber '" + InputNameString + "' must be a numerical value, Exceptions: %s" % exceptions)
 
-        try:
-            if InputNumber_ConvertedToFloat == 0.0 or InputNumber_ConvertedToFloat == 1:
-                return InputNumber_ConvertedToFloat
-            else:
-                input("PassThrough0and1values_ExitProgramOtherwise Error. '" +
-                          InputNameString +
-                          "' must be 0 or 1 (value was " +
-                          str(InputNumber_ConvertedToFloat) +
-                          "). Press any key (and enter) to exit.")
-
+            ##########################
+            if ExitProgramIfFailureFlag == 1:
                 sys.exit()
+            else:
+                return -1
+            ##########################
+
+            ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        try:
+
+            ##########################################################################################################
+            if InputNumber_ConvertedToFloat == 0.0 or InputNumber_ConvertedToFloat == 1.0:
+                return InputNumber_ConvertedToFloat
+
+            else:
+
+                print(self.TellWhichFileWereIn() + ", PassThrough0and1values_ExitProgramOtherwise Error. '" +
+                              str(InputNameString) +
+                              "' must be 0 or 1 (value was " +
+                              str(InputNumber_ConvertedToFloat) +
+                              "). Press any key (and enter) to exit.")
+
+                ##########################
+                if ExitProgramIfFailureFlag == 1:
+                    sys.exit()
+
+                else:
+                    return -1
+                ##########################
+
+            ##########################################################################################################
+
         except:
+
+            ##########################################################################################################
             exceptions = sys.exc_info()[0]
-            print("PassThrough0and1values_ExitProgramOtherwise Error, Exceptions: %s" % exceptions)
-            input("Press any key to continue")
-            sys.exit()
+            print(self.TellWhichFileWereIn() + ", PassThrough0and1values_ExitProgramOtherwise Error, Exceptions: %s" % exceptions)
+
+            ##########################
+            if ExitProgramIfFailureFlag == 1:
+                sys.exit()
+            else:
+                return -1
+            ##########################
+
+            ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+
+    ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
 
     ##########################################################################################################
     ##########################################################################################################
-    def PassThroughFloatValuesInRange_ExitProgramOtherwise(self, InputNameString, InputNumber, RangeMinValue, RangeMaxValue):
+    ##########################################################################################################
+    def PassThroughFloatValuesInRange_ExitProgramOtherwise(self, InputNameString, InputNumber, RangeMinValue, RangeMaxValue, ExitProgramIfFailureFlag = 0):
+
+        ##########################################################################################################
+        ##########################################################################################################
         try:
+            ##########################################################################################################
             InputNumber_ConvertedToFloat = float(InputNumber)
+            ##########################################################################################################
+
         except:
+            ##########################################################################################################
             exceptions = sys.exc_info()[0]
-            print("PassThroughFloatValuesInRange_ExitProgramOtherwise Error. InputNumber must be a float value, Exceptions: %s" % exceptions)
-            input("Press any key to continue")
-            sys.exit()
+            print(self.TellWhichFileWereIn() + ", PassThroughFloatValuesInRange_ExitProgramOtherwise Error. InputNumber '" + InputNameString + "' must be a float value, Exceptions: %s" % exceptions)
+            traceback.print_exc()
 
-        try:
-            if InputNumber_ConvertedToFloat >= RangeMinValue and InputNumber_ConvertedToFloat <= RangeMaxValue:
-                return InputNumber_ConvertedToFloat
-            else:
-                input("PassThroughFloatValuesInRange_ExitProgramOtherwise Error. '" +
-                          InputNameString +
-                          "' must be in the range [" +
-                          str(RangeMinValue) +
-                          ", " +
-                          str(RangeMaxValue) +
-                          "] (value was " +
-                          str(InputNumber_ConvertedToFloat) + "). Press any key (and enter) to exit.")
-
+            ##########################
+            if ExitProgramIfFailureFlag == 1:
                 sys.exit()
+            else:
+                return -11111.0
+            ##########################
+
+            ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        try:
+
+            ##########################################################################################################
+            InputNumber_ConvertedToFloat_Limited = self.LimitNumber_FloatOutputOnly(RangeMinValue, RangeMaxValue, InputNumber_ConvertedToFloat)
+
+            if InputNumber_ConvertedToFloat_Limited != InputNumber_ConvertedToFloat:
+                print(self.TellWhichFileWereIn() + ", PassThroughFloatValuesInRange_ExitProgramOtherwise Error. '" +
+                      str(InputNameString) +
+                      "' must be in the range [" +
+                      str(RangeMinValue) +
+                      ", " +
+                      str(RangeMaxValue) +
+                      "] (value was " +
+                      str(InputNumber_ConvertedToFloat) + ")")
+
+                ##########################
+                if ExitProgramIfFailureFlag == 1:
+                    sys.exit()
+                else:
+                    return -11111.0
+                ##########################
+
+            else:
+                return InputNumber_ConvertedToFloat_Limited
+            ##########################################################################################################
+
         except:
+            ##########################################################################################################
             exceptions = sys.exc_info()[0]
-            print("PassThroughFloatValuesInRange_ExitProgramOtherwise Error, Exceptions: %s" % exceptions)
-            input("Press any key to continue")
-            sys.exit()
+            print(self.TellWhichFileWereIn() + ", PassThroughFloatValuesInRange_ExitProgramOtherwise Error, Exceptions: %s" % exceptions)
+            traceback.print_exc()
+
+            ##########################
+            if ExitProgramIfFailureFlag == 1:
+                sys.exit()
+            else:
+                return -11111.0
+            ##########################
+
+            ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+
+    ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
 
@@ -938,31 +1034,45 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
     ##########################################################################################################
     ##########################################################################################################
-    def CalculateMeasurementForceDerivative(self):
+    ##########################################################################################################
+    def CalculateMeasurementDerivative(self):
 
         try:
-            self.CurrentTime_CalculateMeasurementForceDerivative = self.getPreciseSecondsTimeStampString()
-            
-            self.DataStreamingDeltaT_CalculateMeasurementForceDerivative = self.CurrentTime_CalculateMeasurementForceDerivative - self.LastTime_CalculateMeasurementForceDerivative
+            self.CurrentTime_CalculateMeasurementDerivative = self.getPreciseSecondsTimeStampString()
+            self.DataStreamingDeltaT_CalculateMeasurementDerivative = self.CurrentTime_CalculateMeasurementDerivative - self.LastTime_CalculateMeasurementDerivative
 
             ##########################################################################################################
-            if self.DataStreamingDeltaT_CalculateMeasurementForceDerivative != 0.0:
-                MeasurementForceDerivative_lbPerSec_raw = (self.CurrentMeasurementForce_lb - self.LastMeasurementForce_lb)/self.DataStreamingDeltaT_CalculateMeasurementForceDerivative
+            ##########################################################################################################
+            if self.DataStreamingDeltaT_CalculateMeasurementDerivative != 0.0:
 
-                ResultsDict = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.AddDataDictFromExternalProgram(dict([("ForceDerivative", MeasurementForceDerivative_lbPerSec_raw)]))
-                MeasurementForceDerivative_lbPerSec_filtered = ResultsDict["ForceDerivative"]["Filtered_MostRecentValuesList"][0]
+                ##########################################################################################################
+                MeasurementForceDerivative_raw = (self.CurrentMeasurement - self.LastMeasurement)/self.DataStreamingDeltaT_CalculateMeasurementDerivative
 
-                MeasurementForceDerivative_DictOfConvertedValues = self.ConvertForceToAllUnits(MeasurementForceDerivative_lbPerSec_filtered, "lbF")
+                ResultsDict = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.AddDataDictFromExternalProgram(dict([("MeasurementDerivative", MeasurementForceDerivative_raw)]))
+                MeasurementDerivative_filtered = ResultsDict["MeasurementDerivative"]["Filtered_MostRecentValuesList"][0]
+                ##########################################################################################################
 
-                self.LastTime_CalculateMeasurementForceDerivative = self.CurrentTime_CalculateMeasurementForceDerivative
+                ##########################################################################################################
+                if self.TorqueInsteadOfForceFlag == 0:
+                    MeasurementDerivative_DictOfConvertedValues = self.ConvertForceAndTorqueToAllUnits(MeasurementDerivative_filtered, "lbF")
+                else:
+                    MeasurementDerivative_DictOfConvertedValues = self.ConvertForceAndTorqueToAllUnits(MeasurementDerivative_filtered, "lbFin")
+                ##########################################################################################################
 
-                return MeasurementForceDerivative_DictOfConvertedValues
+                ##########################################################################################################
+                self.LastTime_CalculateMeasurementDerivative = self.CurrentTime_CalculateMeasurementDerivative
+
+                return MeasurementDerivative_DictOfConvertedValues
+                ##########################################################################################################
+
+            ##########################################################################################################
             ##########################################################################################################
 
         except:
             exceptions = sys.exc_info()[0]
-            print("CalculateMeasurementForceDerivative, Exceptions: %s" % exceptions)
+            print("CalculateMeasurementDerivative, Exceptions: %s" % exceptions)
             traceback.print_exc()
+    ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
 
@@ -1282,8 +1392,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
                 self.ResetPeak_EventHasHappenedFlag = 1
 
-                #self.ResetLatchedAlarms()
-
                 return 1
 
             except:
@@ -1321,102 +1429,150 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
     ##########################################################################################################
     ##########################################################################################################
 
-    '''
     ##########################################################################################################
     ##########################################################################################################
-    def ResetLatchedAlarms(self):
-
-        if self.SerialConnectedFlag == 1:
-            try:
-                
-                StringToTx = "*1C2" + "\r"
-
-                self.ResetLatchedAlarms_EventHasHappenedFlag = 1
-                
-                self.DedicatedTxThread_TxMessageToSend_Queue.put(StringToTx)
-
-                return 1
-
-            except:
-                exceptions = sys.exc_info()[0]
-                print("ResetLatchedAlarms, exceptions: %s" % exceptions)
-
-        else:
-            print("ResetLatchedAlarms: Error, SerialConnectedFlag = 0, cannot issue command.")
-            return 0
     ##########################################################################################################
-    ##########################################################################################################
-    '''
-
-    ##########################################################################################################
-    ##########################################################################################################
-    def ConvertForceToAllUnits(self, InputValue, InputUnits):
+    ########################################################################################################## unicorn
+    def ConvertForceAndTorqueToAllUnits(self, InputValue, InputUnits):
 
         try:
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
 
             ##########################################################################################################
-            ConvertedValue_ozF = -11111.0
-            ConvertedValue_lbF = -11111.0
-            ConvertedValue_gF = -11111.0
-            ConvertedValue_N = -11111.0
-            ConvertedValue_kgF = -11111.0
-
+            ##########################################################################################################
             InputValue = float(InputValue)
+            InputUnits = str(InputUnits)
+            ##########################################################################################################
+            ##########################################################################################################
 
-            if InputUnits == "ozF": #ozF force
-                ConvertedValue_lbF = InputValue/16.0
+            ##########################################################################################################
+            ##########################################################################################################
+            DictToReturn = dict()
+            for Key in self.ForceUnits_ListOfAcceptableValueStrings:
+                DictToReturn[Key] = -11111.0
+            for Key in self.TorqueUnits_ListOfAcceptableValueStrings:
+                DictToReturn[Key] = -11111.0
+            ##########################################################################################################
+            ##########################################################################################################
 
-            elif InputUnits == "lbF":
-                ConvertedValue_lbF = InputValue
-
-            elif InputUnits == "gF":
-                ConvertedValue_lbF = InputValue/453.591830542594
-
-            elif InputUnits == "N":
-                ConvertedValue_lbF = 0.224808942443*InputValue
-
-            elif InputUnits == "kgF": #kgF force
-                ConvertedValue_lbF = 2.20462*InputValue
-
+            ##########################################################################################################
+            ##########################################################################################################
+            if InputUnits in self.ForceUnits_ListOfAcceptableValueStrings:
+                self.TorqueInsteadOfForceFlag = 0
+            elif InputUnits in self.TorqueUnits_ListOfAcceptableValueStrings:
+                self.TorqueInsteadOfForceFlag = 1
             else:
-                ConvertedValue_lbF = -11111.0
-                InputUnits = "other"
+                print("ConvertForceAndTorqueToAllUnits: Error, InputUnits = " + InputUnits + " is not recognized.")
+                return DictToReturn
             ##########################################################################################################
-
             ##########################################################################################################
-            if InputUnits != "other":
-                ConvertedValue_ozF = 16.0*ConvertedValue_lbF
-
-                ConvertedValue_gF = 453.591830542594*ConvertedValue_lbF
-                ConvertedValue_kgF = ConvertedValue_lbF/2.20462
-
-                ConvertedValue_N = ConvertedValue_lbF/0.224808942443
-
-            else:
-                self.MyPrint_WithoutLogFile("ConvertForceToAllUnits: InputUnits not recognized. Input value: " + str(InputValue) + ", InputUnits: " + str(InputUnits))
-
-            ConvertedValuesDict = dict([("ozF", ConvertedValue_ozF),
-                                        ("lbF", ConvertedValue_lbF),
-                                        ("gF", ConvertedValue_gF),
-                                        ("N", ConvertedValue_N),
-                                        ("kgF", ConvertedValue_kgF)])
-
-            return ConvertedValuesDict
+            
             ##########################################################################################################
+            ##########################################################################################################
+            if self.TorqueInsteadOfForceFlag == 0:
 
+                ##########################################################################################################
+                Force_ConvertedValue_lbF = -11111.0
+                
+                if InputUnits == "ozF":
+                    Force_ConvertedValue_lbF = InputValue/16.0
+    
+                elif InputUnits == "lbF":
+                    Force_ConvertedValue_lbF = InputValue/1.0
+    
+                elif InputUnits == "gF":
+                    Force_ConvertedValue_lbF = InputValue/453.59236844
+    
+                elif InputUnits == "N":
+                    Force_ConvertedValue_lbF = InputValue/4.4482216
+    
+                elif InputUnits == "kgF":
+                    Force_ConvertedValue_lbF = InputValue/0.45359236844
+                ##########################################################################################################
 
+                ##########################################################################################################
+                Force_ConvertedValue_ozF = Force_ConvertedValue_lbF*16.0
+                Force_ConvertedValue_lbF = Force_ConvertedValue_lbF*1.0
+                Force_ConvertedValue_gF = Force_ConvertedValue_lbF*453.59236844
+                Force_ConvertedValue_N = Force_ConvertedValue_lbF*4.4482216
+                Force_ConvertedValue_kgF = Force_ConvertedValue_lbF*0.45359236844
+                
+                DictToReturn["ozF"] = Force_ConvertedValue_ozF
+                DictToReturn["lbF"] = Force_ConvertedValue_lbF
+                DictToReturn["gF"] = Force_ConvertedValue_gF
+                DictToReturn["N"] = Force_ConvertedValue_N
+                DictToReturn["kgF"] = Force_ConvertedValue_kgF
+                
+                return DictToReturn
+                ##########################################################################################################
+            
+            ##########################################################################################################
+            ##########################################################################################################
+            
+            ##########################################################################################################
+            ##########################################################################################################
+            elif self.TorqueInsteadOfForceFlag == 1:
+
+                ##########################################################################################################
+                Torque_ConvertedValue_lbFin = -11111.0
+                
+                if InputUnits == "ozFin":
+                    Torque_ConvertedValue_lbFin = InputValue/16.0
+    
+                elif InputUnits == "lbFin":
+                    Torque_ConvertedValue_lbFin = InputValue/1.0
+    
+                elif InputUnits == "lbFft":
+                    Torque_ConvertedValue_lbFin = InputValue/0.083333333
+    
+                elif InputUnits == "Nm":
+                    Torque_ConvertedValue_lbFin = InputValue/0.112984429
+    
+                elif InputUnits == "Ncm":
+                    Torque_ConvertedValue_lbFin = InputValue/11.2984829
+                ##########################################################################################################
+
+                ##########################################################################################################
+                Torque_ConvertedValue_ozFin = Torque_ConvertedValue_lbFin*16.0
+                Torque_ConvertedValue_lbFin = Torque_ConvertedValue_lbFin*1.0
+                Torque_ConvertedValue_lbFft = Torque_ConvertedValue_lbFin*0.083333333
+                Torque_ConvertedValue_Nm = Torque_ConvertedValue_lbFin*0.112984429
+                Torque_ConvertedValue_Ncm = Torque_ConvertedValue_lbFin*11.2984829
+                
+                DictToReturn["ozFin"] = Torque_ConvertedValue_ozFin
+                DictToReturn["lbFin"] = Torque_ConvertedValue_lbFin
+                DictToReturn["lbFft"] = Torque_ConvertedValue_lbFft
+                DictToReturn["Nm"] = Torque_ConvertedValue_Nm
+                DictToReturn["Ncm"] = Torque_ConvertedValue_Ncm
+                
+                return DictToReturn
+                ##########################################################################################################
+            
+            ##########################################################################################################
+            ##########################################################################################################
+            
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
         except:
+            
             exceptions = sys.exc_info()[0]
-            self.MyPrint_WithoutLogFile("ConvertForceToAllUnits InputValue: " + str(InputValue) + ", InputUnits: " + str(InputUnits) + ", exceptions: %s" % exceptions)
+            print("ConvertForceAndTorqueToAllUnits InputValue: " + str(InputValue) + ", InputUnits: " + str(InputUnits) + ", exceptions: %s" % exceptions)
+            # traceback.print_exc()
+            return DictToReturn
 
-            return dict([("ozF", ConvertedValue_ozF),
-                        ("lbF", ConvertedValue_lbF),
-                        ("gF", ConvertedValue_gF),
-                        ("N", ConvertedValue_N),
-                        ("kgF", ConvertedValue_kgF)])
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
 
-            #traceback.print_exc()
-
+    ##########################################################################################################
+    ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
 
@@ -1487,14 +1643,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
                 self.FilterExponent0to10ForNumberOfSamplesToBeAveraged_NeedsToBeChangedFlag = 0
             ##########################################################################################################
-
-            '''
-            ##########################################################################################################
-            if self.ResetLatchedAlarms_EventNeedsToBeFiredFlag == 1:
-                self.ResetLatchedAlarms()
-                self.ResetLatchedAlarms_EventNeedsToBeFiredFlag = 0
-            ##########################################################################################################
-            '''
 
             ##########################################################################################################
             if self.ListCurrentSettingsAndStatus_EventNeedsToBeFiredFlag == 1:
@@ -1625,7 +1773,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
                             self.MostRecentDataDict["MostRecentMessage_LengthOfSplitIntoList"] = len(RxMessageStringList)
 
                             if self.PrintAllReceivedSerialMessageForDebuggingFlag == 1:
-                                print("RxMessage: " + str(RxMessage) + ", Type = " + str(type(RxMessageStringList)) + ", Len = " + str(len(RxMessageStringList)) + ", Message = " + str(RxMessageStringList))
+                                print("RxMessage: " + str(RxMessage) + ", Len = " + str(len(RxMessage)) + ", Type = " + str(type(RxMessageStringList)) + ", Message = " + str(RxMessageStringList))
                             ##########################################
 
                             ##########################################
@@ -1636,20 +1784,26 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
                             ##########################################
                             self.MostRecentDataDict["MeasurementUnits"] = MeasurementUnits
 
-                            self.MostRecentDataDict["MeasurementForce_DictOfConvertedValues"] = self.ConvertForceToAllUnits(float(MeasurementForce), MeasurementUnits)
+                            self.MostRecentDataDict["Measurement_DictOfConvertedValues"] = self.ConvertForceAndTorqueToAllUnits(float(MeasurementForce), MeasurementUnits)
 
-                            self.CurrentMeasurementForce_lb = self.MostRecentDataDict["MeasurementForce_DictOfConvertedValues"]["lbF"]
 
-                            self.MostRecentDataDict["MeasurementForceDerivative_DictOfConvertedValues"] = self.CalculateMeasurementForceDerivative()
+                            if self.TorqueInsteadOfForceFlag == 0:
+                                self.CurrentMeasurement = self.MostRecentDataDict["Measurement_DictOfConvertedValues"]["lbF"]
+                            elif self.TorqueInsteadOfForceFlag == 1:
+                                self.CurrentMeasurement = self.MostRecentDataDict["Measurement_DictOfConvertedValues"]["lbFin"]
+                            else:
+                                self.CurrentMeasurement = -11111.0
+
+                            self.MostRecentDataDict["MeasurementDerivative_DictOfConvertedValues"] = self.CalculateMeasurementDerivative()
 
                             self.MostRecentDataDict["DataStreamingFrequency_CalculatedFromDedicatedRxThread"] = self.DataStreamingFrequency_CalculatedFromDedicatedRxThread
                             self.MostRecentDataDict["DataStreamingFrequency_CalculatedFromDedicatedTxThread"] = self.DataStreamingFrequency_CalculatedFromDedicatedTxThread
 
                             self.MostRecentDataDict["ResetPeak_EventHasHappenedFlag"] = self.ResetPeak_EventHasHappenedFlag
                             self.MostRecentDataDict["ResetTare_EventHasHappenedFlag"] = self.ResetTare_EventHasHappenedFlag
-                            self.MostRecentDataDict["ForceDerivative_ExponentialSmoothingFilterLambda"] = self.ForceDerivative_ExponentialSmoothingFilterLambda
+                            self.MostRecentDataDict["MeasurementDerivative_ExponentialSmoothingFilterLambda"] = self.MeasurementDerivative_ExponentialSmoothingFilterLambda
 
-                            self.LastMeasurementForce_lb = self.CurrentMeasurementForce_lb
+                            self.LastMeasurement = self.CurrentMeasurement
                             ##########################################
 
                             ##########################################
@@ -1817,15 +1971,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
         self.ResetTare_Button.grid(row=0, column=1, padx=10, pady=10, columnspan=1, rowspan=1)
         #################################################
         #################################################
-
-        '''
-        #################################################
-        #################################################
-        self.ResetLatchedAlarms_Button = Button(self.ButtonsFrame, text="Reset Alarms", state="normal", width=20, command=lambda: self.ResetLatchedAlarms_Button_Response())
-        self.ResetLatchedAlarms_Button.grid(row=0, column=2, padx=10, pady=10, columnspan=1, rowspan=1)
-        #################################################
-        #################################################
-        '''
         
         #################################################
         #################################################
@@ -1897,19 +2042,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
     ##########################################################################################################
     ##########################################################################################################
-
-    '''
-    ##########################################################################################################
-    ##########################################################################################################
-    def ResetLatchedAlarms_Button_Response(self):
-
-        self.ResetLatchedAlarms_EventNeedsToBeFiredFlag = 1
-
-        #self.MyPrint_WithoutLogFile("ResetLatchedAlarms_Button_Response: Event fired!")
-
-    ##########################################################################################################
-    ##########################################################################################################
-    '''
 
     ##########################################################################################################
     ##########################################################################################################
@@ -2189,32 +2321,44 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
     ##########################################################################################################
     def ConvertDictToProperlyFormattedStringForPrinting(self, DictToPrint, NumberOfDecimalsPlaceToUse = 3, NumberOfEntriesPerLine = 1, NumberOfTabsBetweenItems = 3):
 
-        ProperlyFormattedStringForPrinting = ""
-        ItemsPerLineCounter = 0
+        try:
+            ProperlyFormattedStringForPrinting = ""
+            ItemsPerLineCounter = 0
 
-        for Key in DictToPrint:
+            for Key in DictToPrint:
 
-            ##########################################################################################################
-            if isinstance(DictToPrint[Key], dict): #RECURSION
-                ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + \
-                                                     Key + ":\n" + \
-                                                     self.ConvertDictToProperlyFormattedStringForPrinting(DictToPrint[Key], NumberOfDecimalsPlaceToUse, NumberOfEntriesPerLine, NumberOfTabsBetweenItems)
+                ##########################################################################################################
+                if isinstance(DictToPrint[Key], dict): #RECURSION
+                    ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + \
+                                                         str(Key) + ":\n" + \
+                                                         self.ConvertDictToProperlyFormattedStringForPrinting(DictToPrint[Key],
+                                                                                                              NumberOfDecimalsPlaceToUse,
+                                                                                                              NumberOfEntriesPerLine,
+                                                                                                              NumberOfTabsBetweenItems)
 
-            else:
-                ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + \
-                                                     Key + ": " + \
-                                                     self.ConvertFloatToStringWithNumberOfLeadingNumbersAndDecimalPlaces_NumberOrListInput(DictToPrint[Key], 0, NumberOfDecimalsPlaceToUse)
-            ##########################################################################################################
+                else:
+                    ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + \
+                                                         str(Key) + ": " + \
+                                                         self.ConvertFloatToStringWithNumberOfLeadingNumbersAndDecimalPlaces_NumberOrListInput(DictToPrint[Key],
+                                                                                                                                               0,
+                                                                                                                                               NumberOfDecimalsPlaceToUse)
+                ##########################################################################################################
 
-            ##########################################################################################################
-            if ItemsPerLineCounter < NumberOfEntriesPerLine - 1:
-                ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + "\t"*NumberOfTabsBetweenItems
-                ItemsPerLineCounter = ItemsPerLineCounter + 1
-            else:
-                ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + "\n"
-                ItemsPerLineCounter = 0
-            ##########################################################################################################
+                ##########################################################################################################
+                if ItemsPerLineCounter < NumberOfEntriesPerLine - 1:
+                    ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + "\t"*NumberOfTabsBetweenItems
+                    ItemsPerLineCounter = ItemsPerLineCounter + 1
+                else:
+                    ProperlyFormattedStringForPrinting = ProperlyFormattedStringForPrinting + "\n"
+                    ItemsPerLineCounter = 0
+                ##########################################################################################################
 
-        return ProperlyFormattedStringForPrinting
+            return ProperlyFormattedStringForPrinting
+
+        except:
+            exceptions = sys.exc_info()[0]
+            print("ConvertDictToProperlyFormattedStringForPrinting, Exceptions: %s" % exceptions)
+            return ""
+            #traceback.print_exc()
     ##########################################################################################################
     ##########################################################################################################
