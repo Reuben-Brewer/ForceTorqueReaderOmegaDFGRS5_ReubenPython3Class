@@ -14,17 +14,13 @@ www.reubotics.com
 
 Apache 2 License
 
-Software Revision A, 12/27/2023
+Software Revision B, 11/20/2024
 
 Verified working on:
 
-Python 3.8.
+Python 3.11.
 
 Windows 10/11 64-bit
-
-Raspberry Pi Buster
-
-(may work on Mac in non-GUI mode, but haven't tested yet)
 
 Note For test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py:
 
@@ -38,7 +34,7 @@ Note For test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_Multip
 
 Note for ExcelPlot_CSVdataLogger_ReubenPython3Code__ForceTorqueReaderOmegaDFGRS5_MultipleSensors:
 
-1. This file is currently configured for 1 sensors, plotting only their sum. These details can be changed in the function "CreateExcelChart".
+1. This file is currently configured for 1 sensor, plotting only their sum.
 
 ###########################
 
@@ -70,21 +66,21 @@ pip install ftd2xx, ##https://pypi.org/project/ftd2xx/ #version 1.3.3 as of 11/0
 
 ############
 
-ExcelPlot_CSVdataLogger_ReubenPython3Code__ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies: ['pandas', 'win32com.client', 'xlsxwriter', 'xlutils.copy', 'xlwt']
+ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListOfModuleDependencies: ['pandas', 'win32com.client', 'xlsxwriter', 'xlutils.copy', 'xlwt']
 
-ExcelPlot_CSVdataLogger_ReubenPython3Code__ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_TestProgram: []
+ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListOfModuleDependencies_TestProgram: []
 
-ExcelPlot_CSVdataLogger_ReubenPython3Code__ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_NestedLayers: []
+ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListOfModuleDependencies_NestedLayers: []
 
-ExcelPlot_CSVdataLogger_ReubenPython3Code__ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_All:['pandas', 'win32com.client', 'xlsxwriter', 'xlutils.copy', 'xlwt']
+ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListOfModuleDependencies_All:['pandas', 'win32com.client', 'xlsxwriter', 'xlutils.copy', 'xlwt']
 
-pip install pywin32         #version 305.1 11/8/23
+pip install pywin32         #version 305.1 as of 10/17/24
 
-pip install xlsxwriter      #version 3.1.9 as of 11/08/2023. Might have to manually delete older version from /lib/site-packages if it was distutils-managed. Works overall, but the function ".set_size" doesn't do anything.
+pip install xlsxwriter      #version 3.2.0 as of 10/17/24. Might have to manually delete older version from /lib/site-packages if it was distutils-managed. Works overall, but the function ".set_size" doesn't do anything.
 
-pip install xlutils         #version 2.0.0 as of 11/8/23
+pip install xlutils         #version 2.0.0 as of 10/17/24
 
-pip install xlwt            #version 1.3.0 as of 11/8/23
+pip install xlwt            #version 1.3.0 as of 10/17/24
 
 ############
 
