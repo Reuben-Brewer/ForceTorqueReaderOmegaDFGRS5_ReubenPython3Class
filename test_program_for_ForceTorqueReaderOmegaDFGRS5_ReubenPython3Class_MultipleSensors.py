@@ -889,7 +889,7 @@ if __name__ == '__main__':
     print("Starting main loop 'test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class.")
     StartingTime_MainLoopThread = getPreciseSecondsTimeStampString()
 
-    while(EXIT_PROGRAM_FLAG == 0 or CSVdataLogger_Object.IsSaving() == 1):
+    while(EXIT_PROGRAM_FLAG == 0):
 
         ###################################################
         ###################################################
