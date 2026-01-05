@@ -6,12 +6,20 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision B, 11/20/2024
+Software Revision C, 01/05/2026
 
-Verified working on: Python 3.11 for Windows 10/11 64-bit.
+Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit and Raspberry Pi Bookworm.
 '''
 
 __author__ = 'reuben.brewer'
+
+##########################################################################################################
+##########################################################################################################
+
+##########################################
+import ReubenGithubCodeModulePaths #Replaces the need to have "ReubenGithubCodeModulePaths.pth" within "C:\Anaconda3\Lib\site-packages".
+ReubenGithubCodeModulePaths.Enable()
+##########################################
 
 ##########################################
 from LowPassFilterForDictsOfLists_ReubenPython2and3Class import *
@@ -28,6 +36,7 @@ import collections
 from copy import * #for deepcopy
 import inspect #To enable 'TellWhichFileWereIn'
 import threading
+import queue as Queue
 import traceback
 ##########################################
 
@@ -38,14 +47,6 @@ from tkinter import ttk
 ##########################################
 
 ##########################################
-import queue as Queue
-##########################################
-
-##########################################
-from future.builtins import input as input
-########################################## "sudo pip3 install future" (Python 3) AND "sudo pip install future" (Python 2)
-
-##########################################
 import platform
 if platform.system() == "Windows":
     import ctypes
@@ -53,14 +54,12 @@ if platform.system() == "Windows":
     winmm.timeBeginPeriod(1) #Set minimum timer resolution to 1ms so that time.sleep(0.001) behaves properly.
 ##########################################
 
-#########################################################
-
-##########################
+##########################################
 import serial #___IMPORTANT: pip install pyserial (NOT pip install serial).
 from serial.tools import list_ports
-##########################
+##########################################
 
-##########################
+##########################################
 global ftd2xx_IMPORTED_FLAG
 ftd2xx_IMPORTED_FLAG = 0
 try:
@@ -72,15 +71,16 @@ except:
     print("**********")
     print("********** ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: ERROR, failed to import ftdtxx, Exceptions: %s" % exceptions + " ********** ")
     print("**********")
-##########################
+##########################################
 
-#########################################################
+##########################################################################################################
+##########################################################################################################
 
 class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkinter Frame
 
     ##########################################################################################################
     ##########################################################################################################
-    def __init__(self, setup_dict): #Subclass the Tkinter Frame
+    def __init__(self, SetupDict): #Subclass the Tkinter Frame
 
         print("#################### ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__ starting. ####################")
 
@@ -208,8 +208,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "GUIparametersDict" in setup_dict:
-            self.GUIparametersDict = setup_dict["GUIparametersDict"]
+        if "GUIparametersDict" in SetupDict:
+            self.GUIparametersDict = SetupDict["GUIparametersDict"]
 
             #########################################################
             #########################################################
@@ -219,16 +219,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
                 self.USE_GUI_FLAG = 0
 
             print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: USE_GUI_FLAG: " + str(self.USE_GUI_FLAG))
-            #########################################################
-            #########################################################
-
-            #########################################################
-            #########################################################
-            if "root" in self.GUIparametersDict:
-                self.root = self.GUIparametersDict["root"]
-            else:
-                print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: ERROR, must pass in 'root'")
-                return
             #########################################################
             #########################################################
 
@@ -363,8 +353,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "DesiredSerialNumber_USBtoSerialConverter" in setup_dict:
-            self.DesiredSerialNumber_USBtoSerialConverter = setup_dict["DesiredSerialNumber_USBtoSerialConverter"]
+        if "DesiredSerialNumber_USBtoSerialConverter" in SetupDict:
+            self.DesiredSerialNumber_USBtoSerialConverter = SetupDict["DesiredSerialNumber_USBtoSerialConverter"]
 
         else:
             print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: ERROR, must initialize object with 'DesiredSerialNumber_USBtoSerialConverter' argument.")
@@ -376,8 +366,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "NameToDisplay_UserSet" in setup_dict:
-            self.NameToDisplay_UserSet = str(setup_dict["NameToDisplay_UserSet"])
+        if "NameToDisplay_UserSet" in SetupDict:
+            self.NameToDisplay_UserSet = str(SetupDict["NameToDisplay_UserSet"])
         else:
             self.NameToDisplay_UserSet = ""
 
@@ -387,7 +377,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        self.UpdateSetupDictParameters(setup_dict)
+        self.UpdateSetupDictParameters(SetupDict)
         #########################################################
         #########################################################
 
@@ -396,19 +386,19 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #new_filtered_value = k * raw_sensor_value + (1 - k) * old_filtered_value
-        self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_DictOfVariableFilterSettings = dict([("DataStreamingFrequency_CalculatedFromDedicatedTxThread", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
-                                                                                                             ("DataStreamingFrequency_CalculatedFromDedicatedRxThread", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
-                                                                                                             ("MeasurementDerivative", dict([("UseMedianFilterFlag", 1), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", self.MeasurementDerivative_ExponentialSmoothingFilterLambda)]))])
+        self.LowPassFilterForDictsOfLists_DictOfVariableFilterSettings = dict([("DataStreamingFrequency_CalculatedFromDedicatedTxThread", dict([("UseMedianFilterFlag", 0), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
+                                                                                                             ("DataStreamingFrequency_CalculatedFromDedicatedRxThread", dict([("UseMedianFilterFlag", 0), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", 0.05)])),
+                                                                                                             ("MeasurementDerivative", dict([("UseMedianFilterFlag", 0), ("UseExponentialSmoothingFilterFlag", 1),("ExponentialSmoothingFilterLambda", self.MeasurementDerivative_ExponentialSmoothingFilterLambda)]))])
 
-        self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_setup_dict = dict([("DictOfVariableFilterSettings", self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_DictOfVariableFilterSettings)])
+        self.LowPassFilterForDictsOfLists_SetupDict = dict([("DictOfVariableFilterSettings", self.LowPassFilterForDictsOfLists_DictOfVariableFilterSettings)])
 
-        self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject = LowPassFilterForDictsOfLists_ReubenPython2and3Class(self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject_setup_dict)
-        self.LOWPASSFILTER_OPEN_FLAG = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.OBJECT_CREATED_SUCCESSFULLY_FLAG
+        self.LowPassFilterForDictsOfLists_Object = LowPassFilterForDictsOfLists_ReubenPython2and3Class(self.LowPassFilterForDictsOfLists_SetupDict)
+        self.LowPassFilterForDictsOfLists_OPEN_FLAG = self.LowPassFilterForDictsOfLists_Object.OBJECT_CREATED_SUCCESSFULLY_FLAG
         #########################################################
 
         #########################################################
-        if self.LOWPASSFILTER_OPEN_FLAG != 1:
-            print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: Failed to open LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.")
+        if self.LowPassFilterForDictsOfLists_OPEN_FLAG != 1:
+            print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class __init__: Failed to open LowPassFilterForDictsOfLists_Object.")
             return
         #########################################################
 
@@ -484,19 +474,6 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if self.USE_GUI_FLAG == 1:
-            self.StartGUI(self.root)
-        #########################################################
-        #########################################################
-
-        #########################################################
-        #########################################################
-        time.sleep(0.25)
-        #########################################################
-        #########################################################
-
-        #########################################################
-        #########################################################
         self.OBJECT_CREATED_SUCCESSFULLY_FLAG = 1
         #########################################################
         #########################################################
@@ -513,12 +490,12 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
     ##########################################################################################################
     ##########################################################################################################
-    def UpdateSetupDictParameters(self, setup_dict):
+    def UpdateSetupDictParameters(self, SetupDict):
 
         #########################################################
         #########################################################
-        if "ReadingModeString" in setup_dict:
-            self.ReadingModeString = str(setup_dict["ReadingModeString"])
+        if "ReadingModeString" in SetupDict:
+            self.ReadingModeString = str(SetupDict["ReadingModeString"])
 
             if self.ReadingModeString not in self.ReadingModeString_AcceptableValuesList:
                 self.ReadingModeString = "RealTime_CUR"
@@ -535,8 +512,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "AutoShutoffTimeIntegerMinutes0to30" in setup_dict:
-            AutoShutoffTimeIntegerMinutes0to30_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("AutoShutoffTimeIntegerMinutes0to30", setup_dict["AutoShutoffTimeIntegerMinutes0to30"], 0.0, 30.0))
+        if "AutoShutoffTimeIntegerMinutes0to30" in SetupDict:
+            AutoShutoffTimeIntegerMinutes0to30_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("AutoShutoffTimeIntegerMinutes0to30", SetupDict["AutoShutoffTimeIntegerMinutes0to30"], 0.0, 30.0))
 
             if AutoShutoffTimeIntegerMinutes0to30_TEMP not in self.AutoShutoffTimeIntegerMinutes0to30_AcceptableValuesList:
                 self.AutoShutoffTimeIntegerMinutes0to30 = 0  #disabled
@@ -556,8 +533,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "SamplesPerSecond" in setup_dict:
-            SamplesPerSecond_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("SamplesPerSecond", setup_dict["SamplesPerSecond"], 0.0, 250.0))
+        if "SamplesPerSecond" in SetupDict:
+            SamplesPerSecond_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("SamplesPerSecond", SetupDict["SamplesPerSecond"], 0.0, 250.0))
 
             if SamplesPerSecond_TEMP not in self.SamplesPerSecond_AcceptableValuesList:
                 self.SamplesPerSecond = 250 #fastest
@@ -577,8 +554,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "FilterExponent0to10ForNumberOfSamplesToBeAveraged" in setup_dict:
-            FilterExponent0to10ForNumberOfSamplesToBeAveraged_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("FilterExponent0to10ForNumberOfSamplesToBeAveraged", setup_dict["FilterExponent0to10ForNumberOfSamplesToBeAveraged"], 0.0, 10.0))
+        if "FilterExponent0to10ForNumberOfSamplesToBeAveraged" in SetupDict:
+            FilterExponent0to10ForNumberOfSamplesToBeAveraged_TEMP = int(self.PassThroughFloatValuesInRange_ExitProgramOtherwise("FilterExponent0to10ForNumberOfSamplesToBeAveraged", SetupDict["FilterExponent0to10ForNumberOfSamplesToBeAveraged"], 0.0, 10.0))
 
             if FilterExponent0to10ForNumberOfSamplesToBeAveraged_TEMP not in self.FilterExponent0to10ForNumberOfSamplesToBeAveraged_AcceptableValuesList:
                 self.FilterExponent0to10ForNumberOfSamplesToBeAveraged = 0  #disabled
@@ -598,8 +575,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "DedicatedRxThread_TimeToSleepEachLoop" in setup_dict:
-            self.DedicatedRxThread_TimeToSleepEachLoop = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("DedicatedRxThread_TimeToSleepEachLoop", setup_dict["DedicatedRxThread_TimeToSleepEachLoop"], 0.001, 100000)
+        if "DedicatedRxThread_TimeToSleepEachLoop" in SetupDict:
+            self.DedicatedRxThread_TimeToSleepEachLoop = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("DedicatedRxThread_TimeToSleepEachLoop", SetupDict["DedicatedRxThread_TimeToSleepEachLoop"], 0.001, 100000)
 
         else:
             self.DedicatedRxThread_TimeToSleepEachLoop = 0.005
@@ -610,8 +587,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "DedicatedTxThread_TimeToSleepEachLoop" in setup_dict:
-            self.DedicatedTxThread_TimeToSleepEachLoop = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("DedicatedTxThread_TimeToSleepEachLoop", setup_dict["DedicatedTxThread_TimeToSleepEachLoop"], 0.001, 100000)
+        if "DedicatedTxThread_TimeToSleepEachLoop" in SetupDict:
+            self.DedicatedTxThread_TimeToSleepEachLoop = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("DedicatedTxThread_TimeToSleepEachLoop", SetupDict["DedicatedTxThread_TimeToSleepEachLoop"], 0.001, 100000)
 
         else:
             self.DedicatedTxThread_TimeToSleepEachLoop = 0.005
@@ -622,8 +599,8 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
         #########################################################
         #########################################################
-        if "MeasurementDerivative_ExponentialSmoothingFilterLambda" in setup_dict:
-            self.MeasurementDerivative_ExponentialSmoothingFilterLambda = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("MeasurementDerivative_ExponentialSmoothingFilterLambda", setup_dict["MeasurementDerivative_ExponentialSmoothingFilterLambda"], 0.0, 1.0)
+        if "MeasurementDerivative_ExponentialSmoothingFilterLambda" in SetupDict:
+            self.MeasurementDerivative_ExponentialSmoothingFilterLambda = self.PassThroughFloatValuesInRange_ExitProgramOtherwise("MeasurementDerivative_ExponentialSmoothingFilterLambda", SetupDict["MeasurementDerivative_ExponentialSmoothingFilterLambda"], 0.0, 1.0)
 
         else:
             self.MeasurementDerivative_ExponentialSmoothingFilterLambda = 0.95 #new_filtered_value = k * raw_sensor_value + (1 - k) * old_filtered_value
@@ -1000,7 +977,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
             if self.DataStreamingDeltaT_CalculatedFromDedicatedTxThread != 0.0:
                 DataStreamingFrequency_CalculatedFromDedicatedTxThread_TEMP = 1.0/self.DataStreamingDeltaT_CalculatedFromDedicatedTxThread
 
-                ResultsDict = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.AddDataDictFromExternalProgram(dict([("DataStreamingFrequency_CalculatedFromDedicatedTxThread", DataStreamingFrequency_CalculatedFromDedicatedTxThread_TEMP)]))
+                ResultsDict = self.LowPassFilterForDictsOfLists_Object.AddDataDictFromExternalProgram(dict([("DataStreamingFrequency_CalculatedFromDedicatedTxThread", DataStreamingFrequency_CalculatedFromDedicatedTxThread_TEMP)]))
                 self.DataStreamingFrequency_CalculatedFromDedicatedTxThread = ResultsDict["DataStreamingFrequency_CalculatedFromDedicatedTxThread"]["Filtered_MostRecentValuesList"][0]
 
             self.LastTime_CalculatedFromDedicatedTxThread = self.CurrentTime_CalculatedFromDedicatedTxThread
@@ -1021,7 +998,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
             if self.DataStreamingDeltaT_CalculatedFromDedicatedRxThread != 0.0:
                 DataStreamingFrequency_CalculatedFromDedicatedRxThread_TEMP = 1.0/self.DataStreamingDeltaT_CalculatedFromDedicatedRxThread
 
-                ResultsDict = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.AddDataDictFromExternalProgram(dict([("DataStreamingFrequency_CalculatedFromDedicatedRxThread", DataStreamingFrequency_CalculatedFromDedicatedRxThread_TEMP)]))
+                ResultsDict = self.LowPassFilterForDictsOfLists_Object.AddDataDictFromExternalProgram(dict([("DataStreamingFrequency_CalculatedFromDedicatedRxThread", DataStreamingFrequency_CalculatedFromDedicatedRxThread_TEMP)]))
                 self.DataStreamingFrequency_CalculatedFromDedicatedRxThread = ResultsDict["DataStreamingFrequency_CalculatedFromDedicatedRxThread"]["Filtered_MostRecentValuesList"][0]
 
             self.LastTime_CalculatedFromDedicatedRxThread = self.CurrentTime_CalculatedFromDedicatedRxThread
@@ -1048,7 +1025,7 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
                 ##########################################################################################################
                 MeasurementForceDerivative_raw = (self.CurrentMeasurement - self.LastMeasurement)/self.DataStreamingDeltaT_CalculateMeasurementDerivative
 
-                ResultsDict = self.LowPassFilterForDictsOfLists_ReubenPython2and3ClassObject.AddDataDictFromExternalProgram(dict([("MeasurementDerivative", MeasurementForceDerivative_raw)]))
+                ResultsDict = self.LowPassFilterForDictsOfLists_Object.AddDataDictFromExternalProgram(dict([("MeasurementDerivative", MeasurementForceDerivative_raw)]))
                 MeasurementDerivative_filtered = ResultsDict["MeasurementDerivative"]["Filtered_MostRecentValuesList"][0]
                 ##########################################################################################################
 
@@ -1879,26 +1856,14 @@ class ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class(Frame): #Subclass the Tkin
 
     ##########################################################################################################
     ##########################################################################################################
-    def StartGUI(self, GuiParent):
+    def CreateGUIobjects(self, TkinterParent):
 
-        #self.GUI_Thread_ThreadingObject = threading.Thread(target=self.GUI_Thread, args=(GuiParent,))
-        #self.GUI_Thread_ThreadingObject.setDaemon(True) #Should mean that the GUI thread is destroyed automatically when the main thread is destroyed.
-        #self.GUI_Thread_ThreadingObject.start()
-
-        self.GUI_Thread(GuiParent)
-    ##########################################################################################################
-    ##########################################################################################################
-
-    ##########################################################################################################
-    ##########################################################################################################
-    def GUI_Thread(self, parent):
-
-        print("Starting the GUI_Thread for ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class object.")
+        print("ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class, TkinterParent event fired.")
 
         #################################################
         #################################################
-        self.root = parent
-        self.parent = parent
+        self.root = TkinterParent
+        self.parent = TkinterParent
         #################################################
         #################################################
 
