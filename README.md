@@ -14,13 +14,15 @@ www.reubotics.com
 
 Apache 2 License
 
-Software Revision B, 11/20/2024
+Software Revision C, 01/05/2026
 
 Verified working on:
 
-Python 3.11.
+Python 3.11/12/13.
 
 Windows 10/11 64-bit
+
+Raspberry Pi Bookworm
 
 Note For test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py:
 
@@ -48,15 +50,7 @@ Reader settings (consult Omega_DFG-RS5_Manual_M5251.pdf for more information):
 
 ############
 
-test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies: ['CSVdataLogger_ReubenPython3Class', 'ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class', 'MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3Class', 'MyPrint_ReubenPython2and3Class']
-
-test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_TestProgram: []
-
-test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_NestedLayers: ['ftd2xx', 'future.builtins', 'LowPassFilter_ReubenPython2and3Class', 'LowPassFilterForDictsOfLists_ReubenPython2and3Class', 'numpy', 'pexpect', 'psutil', 'serial', 'serial.tools']
-
-test_program_for_ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class_MultipleSensors.py, ListOfModuleDependencies_All:['CSVdataLogger_ReubenPython3Class', 'ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class', 'ftd2xx', 'future.builtins', 'LowPassFilter_ReubenPython2and3Class', 'LowPassFilterForDictsOfLists_ReubenPython2and3Class', 'MyPlotterPureTkinterStandAloneProcess_ReubenPython2and3Class', 'MyPrint_ReubenPython2and3Class', 'numpy', 'pexpect', 'psutil', 'serial', 'serial.tools']
-
-pip install psutil
+ForceTorqueReaderOmegaDFGRS5_ReubenPython3Class, ListOfModuleDependencies_All:['ftd2xx', 'LowPassFilterForDictsOfLists_ReubenPython2and3Class', 'numpy', 'ReubenGithubCodeModulePaths', 'serial', 'serial.tools']
 
 pip install pyserial (NOT pip install serial).
 
@@ -74,13 +68,13 @@ ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListO
 
 ExcelPlot_CSVdataLogger_ReubenPython3Code_ForceTorqueReaderOmegaDFGRS5.py, ListOfModuleDependencies_All:['pandas', 'win32com.client', 'xlsxwriter', 'xlutils.copy', 'xlwt']
 
-pip install pywin32         #version 305.1 as of 10/17/24
+pip install pywin32=311
 
-pip install xlsxwriter      #version 3.2.0 as of 10/17/24. Might have to manually delete older version from /lib/site-packages if it was distutils-managed. Works overall, but the function ".set_size" doesn't do anything.
+pip install xlsxwriter==3.2.9 #Might have to manually delete older version from /lib/site-packages if it was distutils-managed. Works overall, but the function ".set_size" doesn't do anything.
 
-pip install xlutils         #version 2.0.0 as of 10/17/24
+pip install xlutils==2.0.0
 
-pip install xlwt            #version 1.3.0 as of 10/17/24
+pip install xlwt==1.3.0
 
 ############
 
